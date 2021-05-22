@@ -63,6 +63,7 @@ found:
 			}
 			break found
 		}
+
 		copy(c.batches, c.batches[1:])
 		c.batches = c.batches[:len(c.batches)-1]
 	}

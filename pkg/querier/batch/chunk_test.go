@@ -56,7 +56,7 @@ func mkChunk(t require.TestingT, from model.Time, points int, enc promchunk.Enco
 		require.Nil(t, npc)
 		ts = ts.Add(step)
 	}
-	return chunk.NewChunk(userID, fp, metric, pc, model.Time(0), ts)
+	return chunk.NewChunk(userID, fp, metric, pc, model.Time(from), ts)
 }
 
 func mkGenericChunk(t require.TestingT, from model.Time, points int, enc promchunk.Encoding) GenericChunk {

@@ -77,7 +77,7 @@ var (
 	}
 
 	queries = []query{
-		// Windowed rates with small step;  This will cause BufferedIterator to read
+		/*// Windowed rates with small step;  This will cause BufferedIterator to read
 		// all the samples.
 		{
 			query:  "rate(foo[1m])",
@@ -90,7 +90,7 @@ var (
 				return t + int64((sampleRate*4)/time.Millisecond), 1000.0
 			},
 		},
-
+		*/
 		// Very simple single-point gets, with low step.  Performance should be
 		// similar to above.
 		{
@@ -153,6 +153,7 @@ func TestQuerier(t *testing.T) {
 					t.Run(fmt.Sprintf("%s/%s/streaming=%t/iterators=%t", query.query, encoding.name, streaming, iterators), func(t *testing.T) {
 						cfg.IngesterStreaming = streaming
 						cfg.Iterators = iterators
+						cfg.BatchIterators = true
 
 						chunkStore, through := makeMockChunkStore(t, chunks, encoding.e)
 						distributor := mockDistibutorFor(t, chunkStore, through)
@@ -161,8 +162,8 @@ func TestQuerier(t *testing.T) {
 						require.NoError(t, err)
 
 						queryables := []QueryableWithFilter{UseAlwaysQueryable(NewChunkStoreQueryable(cfg, chunkStore)), UseAlwaysQueryable(db)}
-						queryable, _ := New(cfg, overrides, distributor, queryables, purger.NewTombstonesLoader(nil, nil), nil, log.NewNopLogger())
-						testRangeQuery(t, queryable, through, query)
+						queryable, engine := New(cfg, overrides, distributor, queryables, purger.NewTombstonesLoader(nil, nil), nil, log.NewNopLogger())
+						testRangeQuery(t, queryable, through, query, engine)
 					})
 				}
 			}
@@ -701,19 +702,19 @@ func mockDistibutorFor(t *testing.T, cs mockChunkStore, through model.Time) *moc
 	return result
 }
 
-func testRangeQuery(t testing.TB, queryable storage.Queryable, end model.Time, q query) *promql.Result {
+func testRangeQuery(t testing.TB, queryable storage.Queryable, end model.Time, q query, engine *promql.Engine) *promql.Result {
 	dir, err := ioutil.TempDir("", "test_query")
 	assert.NoError(t, err)
 	defer os.RemoveAll(dir)
-	queryTracker := promql.NewActiveQueryTracker(dir, 10, log.NewNopLogger())
+	//queryTracker := promql.NewActiveQueryTracker(dir, 10, log.NewNopLogger())
 
 	from, through, step := time.Unix(0, 0), end.Time(), q.step
-	engine := promql.NewEngine(promql.EngineOpts{
+	/*engine := promql.NewEngine(promql.EngineOpts{
 		Logger:             log.NewNopLogger(),
 		ActiveQueryTracker: queryTracker,
 		MaxSamples:         1e6,
 		Timeout:            1 * time.Minute,
-	})
+	})*/
 	query, err := engine.NewRangeQuery(queryable, q.query, from, through, step)
 	require.NoError(t, err)
 
@@ -881,7 +882,7 @@ func TestShortTermQueryToLTS(t *testing.T) {
 					// If the ingester was hit, the distributor always returns errDistributorError. Prometheus
 					// wrap any Select() error into "expanding series", so we do wrap it as well to have a match.
 					require.Error(t, err)
-					require.Equal(t, errors.Wrap(errDistributorError, "expanding series").Error(), err.Error())
+					require.Equal(t, errors.Wrap(errDistributorError, " expanding series").Error(), err.Error())
 				} else {
 					// If the ingester was hit, there would have been an error from errDistributor.
 					require.NoError(t, err)
