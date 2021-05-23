@@ -85,6 +85,8 @@ func TestChunk(t *testing.T) {
 				Encoding:         int32(encoding.PrometheusXorChunk),
 			}
 			clientChunks = append(clientChunks, clientChunk)
+			clientChunks = append(clientChunks, clientChunk) // adding multiple times to mimic ingesters response
+			clientChunks = append(clientChunks, clientChunk) // if we only add one time, then the iterators.NewChunkMergeIterator wouldn't work to because Next is called during NewChunkMergeIterator function call which pops first chunk
 			for chunkInMeta.Next() {
 				fmt.Println(chunkInMeta.At())
 			}
@@ -108,7 +110,7 @@ func TestChunk(t *testing.T) {
 		labels:            nil,
 		chunks:            dbChunks,
 		chunkIteratorFunc: NewChunkMergeIterator,
-		// chunkIteratorFunc: iterators.NewChunkMergeIterator,
+		//chunkIteratorFunc: iterators.NewChunkMergeIterator,
 		// chunkIteratorFunc: mergeChunks,
 		mint: 1621627445432,
 		maxt: 1621641600000,
